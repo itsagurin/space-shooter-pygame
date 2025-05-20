@@ -1,280 +1,139 @@
-import pygame
 import random
+import pygame
+import os
 import sys
+from scripts.config import *
+from scripts.menu import Menu
+from scripts.game import Game
 
-# Инициализация Pygame
+# Initialize pygame and create window
 pygame.init()
-
-# Константы
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-FPS = 60
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-
-# Создание игрового окна
+pygame.mixer.init()  # Initialize sound mixer
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Gradius Clone")
-clock = pygame.time.Clock()
+pygame.display.set_caption(TITLE)
 
 
-# Загрузка изображений
-def load_image(name, scale=1):
-    # Это заглушка, в реальном проекте стоит использовать изображения
-    surface = pygame.Surface((50, 30))
-    if name == "ship":
-        surface.fill(GREEN)
-    elif name == "enemy":
-        surface.fill(RED)
-    elif name == "laser":
-        surface = pygame.Surface((10, 5))
-        surface.fill(BLUE)
-    return surface
+# Create required directories if they don't exist
+def create_required_dirs():
+    """Create necessary directories for the game"""
+    directories = [
+        os.path.join("images", "backgrounds"),
+        os.path.join("images", "friendly_ships"),
+        os.path.join("images", "enemy_ships"),
+        os.path.join("images", "space_debris"),
+        os.path.join("images", "weapons"),
+        os.path.join("images", "powerups"),
+        os.path.join("assets", "fonts"),
+        os.path.join("assets", "sounds")
+    ]
+
+    for directory in directories:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
 
-# Класс игрока
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = load_image("ship")
-        self.rect = self.image.get_rect()
-        self.rect.centerx = 100
-        self.rect.centery = SCREEN_HEIGHT // 2
-        self.speedx = 0
-        self.speedy = 0
-        self.shoot_delay = 250  # миллисекунды
-        self.last_shot = pygame.time.get_ticks()
-        self.power_level = 1
-        self.lives = 3
+def create_placeholder_images():
+    """Create placeholder images if no images are available"""
+    # Define placeholder images with their paths and colors
+    placeholder_images = [
+        # Ship images
+        (os.path.join(FRIENDLY_SHIPS_DIR, "level1.png"), GREEN, (60, 40)),
+        (os.path.join(FRIENDLY_SHIPS_DIR, "level2.png"), BLUE, (60, 40)),
+        (os.path.join(FRIENDLY_SHIPS_DIR, "level3.png"), PURPLE, (60, 40)),
 
-    def update(self):
-        # Движение с клавиатуры
-        self.speedx = 0
-        self.speedy = 0
-        keystate = pygame.key.get_pressed()
-        if keystate[pygame.K_LEFT]:
-            self.speedx = -8
-        if keystate[pygame.K_RIGHT]:
-            self.speedx = 8
-        if keystate[pygame.K_UP]:
-            self.speedy = -8
-        if keystate[pygame.K_DOWN]:
-            self.speedy = 8
+        # Enemy images
+        (os.path.join(ENEMY_SHIPS_DIR, "enemy1.png"), RED, (50, 30)),
+        (os.path.join(ENEMY_SHIPS_DIR, "enemy2.png"), (255, 100, 0), (50, 30)),
+        (os.path.join(ENEMY_SHIPS_DIR, "enemy3.png"), (200, 0, 0), (60, 40)),
 
-        # Обновление позиции
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
+        # Debris images
+        (os.path.join(SPACE_DEBRIS_DIR, "debris1.png"), (100, 100, 100), (30, 30)),
+        (os.path.join(SPACE_DEBRIS_DIR, "debris2.png"), (150, 150, 100), (25, 25)),
+        (os.path.join(SPACE_DEBRIS_DIR, "debris3.png"), (100, 100, 150), (35, 35)),
 
-        # Ограничение экрана
-        if self.rect.right > SCREEN_WIDTH:
-            self.rect.right = SCREEN_WIDTH
-        if self.rect.left < 0:
-            self.rect.left = 0
-        if self.rect.top < 0:
-            self.rect.top = 0
-        if self.rect.bottom > SCREEN_HEIGHT:
-            self.rect.bottom = SCREEN_HEIGHT
+        # Weapon images
+        (os.path.join(WEAPONS_DIR, "laser_blue.png"), BLUE, (20, 5)),
+        (os.path.join(WEAPONS_DIR, "laser_red.png"), RED, (20, 5)),
+        (os.path.join(WEAPONS_DIR, "laser_green.png"), GREEN, (20, 5)),
 
-    def shoot(self):
-        now = pygame.time.get_ticks()
-        if now - self.last_shot > self.shoot_delay:
-            self.last_shot = now
-            if self.power_level == 1:
-                bullet = Bullet(self.rect.right, self.rect.centery)
-                all_sprites.add(bullet)
-                bullets.add(bullet)
-            elif self.power_level >= 2:
-                bullet1 = Bullet(self.rect.right, self.rect.centery - 10)
-                bullet2 = Bullet(self.rect.right, self.rect.centery + 10)
-                all_sprites.add(bullet1)
-                all_sprites.add(bullet2)
-                bullets.add(bullet1)
-                bullets.add(bullet2)
+        # Power-up images
+        (os.path.join(POWERUPS_DIR, "shield.png"), CYAN, (25, 25)),
+        (os.path.join(POWERUPS_DIR, "power.png"), YELLOW, (25, 25)),
+        (os.path.join(POWERUPS_DIR, "extra_life.png"), GREEN, (25, 25)),
+        (os.path.join(POWERUPS_DIR, "speed.png"), BLUE, (25, 25)),
+
+        # Background images
+        (os.path.join(BACKGROUNDS_DIR, "space_bg.png"), DARK_BLUE, (SCREEN_WIDTH, SCREEN_HEIGHT)),
+        (os.path.join(BACKGROUNDS_DIR, "nebula_bg.png"), (40, 0, 40), (SCREEN_WIDTH, SCREEN_HEIGHT))
+    ]
+
+    # Create each placeholder image if it doesn't exist
+    for path, color, size in placeholder_images:
+        if not os.path.exists(path):
+            create_image(path, color, size)
 
 
-# Класс врага
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = load_image("enemy")
-        self.rect = self.image.get_rect()
-        self.rect.x = SCREEN_WIDTH + 20
-        self.rect.y = random.randrange(50, SCREEN_HEIGHT - 100)
-        self.speedx = random.randrange(-9, -3)
-        self.speedy = random.randrange(-2, 2)
+def create_image(path, color, size):
+    """Create and save a placeholder image"""
+    surface = pygame.Surface(size)
+    surface.fill(color)
 
-    def update(self):
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
+    # For ship images, add some details
+    if "ships" in path:
+        # Draw a cockpit
+        cockpit_color = (200, 200, 255)
+        cockpit_width = size[0] // 3
+        cockpit_height = size[1] // 2
+        cockpit_x = size[0] // 2 - (cockpit_width // 2)
+        cockpit_y = size[1] // 2 - (cockpit_height // 2)
+        pygame.draw.ellipse(surface, cockpit_color, (cockpit_x, cockpit_y, cockpit_width, cockpit_height))
 
-        # Если враг улетел за экран - респаун
-        if self.rect.right < 0:
-            self.rect.x = SCREEN_WIDTH + 20
-            self.rect.y = random.randrange(50, SCREEN_HEIGHT - 100)
-            self.speedx = random.randrange(-9, -3)
-            self.speedy = random.randrange(-2, 2)
+    # For debris, add some texture
+    if "debris" in path:
+        # Add random dots
+        for _ in range(10):
+            x = random.randrange(0, size[0])
+            y = random.randrange(0, size[1])
+            radius = random.randrange(1, 4)
+            pygame.draw.circle(surface, (100, 100, 100), (x, y), radius)
 
-        # Держим врагов в пределах экрана по вертикали
-        if self.rect.top < 0 or self.rect.bottom > SCREEN_HEIGHT:
-            self.speedy *= -1
+    # For background images, add stars
+    if "bg" in path:
+        for _ in range(200):
+            x = random.randrange(0, size[0])
+            y = random.randrange(0, size[1])
+            radius = random.randrange(1, 3)
+            brightness = random.randrange(150, 256)
+            pygame.draw.circle(surface, (brightness, brightness, brightness), (x, y), radius)
 
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 
-# Класс пули
-class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        self.image = load_image("laser")
-        self.rect = self.image.get_rect()
-        self.rect.left = x
-        self.rect.centery = y
-        self.speedx = 10
-
-    def update(self):
-        self.rect.x += self.speedx
-        # Удаление пули, если она улетела за экран
-        if self.rect.left > SCREEN_WIDTH:
-            self.kill()
+    # Save the image
+    pygame.image.save(surface, path)
 
 
-# Класс улучшения
-class PowerUp(pygame.sprite.Sprite):
-    def __init__(self, center):
-        super().__init__()
-        self.type = random.choice(['shield', 'power'])
-        self.image = pygame.Surface((25, 25))
-        if self.type == 'shield':
-            self.image.fill((0, 255, 255))  # Голубой для щита
-        else:
-            self.image.fill((255, 255, 0))  # Желтый для усиления
-        self.rect = self.image.get_rect()
-        self.rect.center = center
-        self.speedx = -3
+def main():
+    """Main function to run the game"""
+    # Setup initial resources
+    create_required_dirs()
+    create_placeholder_images()
 
-    def update(self):
-        self.rect.x += self.speedx
-        if self.rect.right < 0:
-            self.kill()
+    # Start with the menu
+    ship_type = None
 
+    while True:
+        # Show main menu until player chooses a ship
+        menu = Menu(screen)
+        ship_type = menu.show_start_menu()
 
-# Отображение счета и жизней
-def draw_text(surf, text, size, x, y):
-    font = pygame.font.Font(pygame.font.match_font('arial'), size)
-    text_surface = font.render(text, True, WHITE)
-    text_rect = text_surface.get_rect()
-    text_rect.midtop = (x, y)
-    surf.blit(text_surface, text_rect)
+        # Start the game
+        game = Game(screen, ship_type)
+        score, high_score = game.run()
+
+        # Can add a score screen or restart logic here if needed
+        # For now, it goes back to the menu
 
 
-def draw_shield_bar(surf, x, y, pct):
-    if pct < 0:
-        pct = 0
-    BAR_LENGTH = 100
-    BAR_HEIGHT = 10
-    fill = (pct / 100) * BAR_LENGTH
-    outline_rect = pygame.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
-    fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
-    pygame.draw.rect(surf, GREEN, fill_rect)
-    pygame.draw.rect(surf, WHITE, outline_rect, 2)
-
-
-def draw_lives(surf, x, y, lives, img):
-    for i in range(lives):
-        img_rect = img.get_rect()
-        img_rect.x = x + 30 * i
-        img_rect.y = y
-        surf.blit(img, img_rect)
-
-
-# Функция создания нового врага
-def new_enemy():
-    e = Enemy()
-    all_sprites.add(e)
-    enemies.add(e)
-
-
-# Инициализация спрайтов
-all_sprites = pygame.sprite.Group()
-enemies = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
-powerups = pygame.sprite.Group()
-
-player = Player()
-all_sprites.add(player)
-
-# Создание группы врагов
-for i in range(8):
-    new_enemy()
-
-# Счет игры
-score = 0
-shield = 100
-
-# Основной игровой цикл
-running = True
-while running:
-    # Поддержание правильной скорости игры
-    clock.tick(FPS)
-
-    # Обработка событий
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                player.shoot()
-            if event.key == pygame.K_ESCAPE:
-                running = False
-
-    # Обновление состояния
-    all_sprites.update()
-
-    # Проверка столкновения пуль и врагов
-    hits = pygame.sprite.groupcollide(enemies, bullets, True, True)
-    for hit in hits:
-        score += 50 - hit.radius // 2
-        if random.random() > 0.9:
-            pow = PowerUp(hit.rect.center)
-            all_sprites.add(pow)
-            powerups.add(pow)
-        new_enemy()
-
-    # Проверка столкновения игрока и врагов
-    hits = pygame.sprite.spritecollide(player, enemies, True)
-    for hit in hits:
-        shield -= 25
-        new_enemy()
-        if shield <= 0:
-            player.lives -= 1
-            shield = 100
-            if player.lives == 0:
-                running = False
-
-    # Проверка столкновения игрока и улучшений
-    hits = pygame.sprite.spritecollide(player, powerups, True)
-    for hit in hits:
-        if hit.type == 'shield':
-            shield += 20
-            if shield > 100:
-                shield = 100
-        if hit.type == 'power':
-            player.power_level += 1
-
-    # Отрисовка
-    screen.fill(BLACK)
-
-    # Отрисовка всех спрайтов
-    all_sprites.draw(screen)
-
-    # Отрисовка счета и здоровья
-    draw_text(screen, f"Счет: {score}", 18, SCREEN_WIDTH // 2, 10)
-    draw_shield_bar(screen, 5, 5, shield)
-    draw_lives(screen, SCREEN_WIDTH - 100, 5, player.lives, load_image("ship", 0.5))
-
-    # После отрисовки всего, переворачиваем экран
-    pygame.display.flip()
-
-pygame.quit()
-sys.exit()
+if __name__ == "__main__":
+    main()
