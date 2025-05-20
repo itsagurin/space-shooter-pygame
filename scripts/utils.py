@@ -20,9 +20,13 @@ def load_image(filepath, scale=1.0):
 
 
 def load_ship_image(ship_type):
-    """Load a player ship image based on ship type"""
+    """Load a player ship image based on ship type and scale it down"""
     filepath = os.path.join(FRIENDLY_SHIPS_DIR, f"{ship_type}.png")
-    return load_image(filepath)
+    img = pygame.image.load(filepath).convert_alpha()
+    scale = 0.33
+    new_size = (int(img.get_width() * scale), int(img.get_height() * scale))
+    img = pygame.transform.scale(img, new_size)
+    return img
 
 
 def load_enemy_image(enemy_type):

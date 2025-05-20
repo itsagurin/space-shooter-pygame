@@ -1,3 +1,5 @@
+import random
+
 import pygame
 import os
 import sys
@@ -60,13 +62,22 @@ class Menu:
             draw_text(self.screen, "Select your ship and start the mission", 25, SCREEN_WIDTH // 2, 120)
 
             # Create buttons
-            start_action = create_button("START GAME", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
-                                         SCREEN_HEIGHT - 150, BUTTON_WIDTH, BUTTON_HEIGHT,
-                                         (50, 120, 50), (0, 200, 0))
-
-            exit_action = create_button("EXIT", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
-                                        SCREEN_HEIGHT - 80, BUTTON_WIDTH, BUTTON_HEIGHT,
-                                        (120, 50, 50), (200, 0, 0))
+            start_action = create_button(
+                "START GAME",
+                SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
+                SCREEN_HEIGHT - 150,
+                BUTTON_WIDTH, BUTTON_HEIGHT,
+                (50, 120, 50), (0, 200, 0),
+                action="start"
+            )
+            exit_action = create_button(
+                "EXIT",
+                SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
+                SCREEN_HEIGHT - 80,
+                BUTTON_WIDTH, BUTTON_HEIGHT,
+                (120, 50, 50), (200, 0, 0),
+                action="exit"
+            )
 
             if start_action:
                 return self.selected_ship
@@ -103,8 +114,14 @@ class Menu:
             draw_text(self.screen, f"Ship {i + 1}", 20, x_pos, center_y + 70)
 
             # Create selection button
-            select_action = create_button("SELECT", x_pos - 50, center_y + 100,
-                                          100, 30, (50, 50, 100), (80, 80, 160))
+            select_action = create_button(
+                "SELECT",
+                x_pos - 50,
+                center_y + 100,
+                100, 30,
+                (50, 50, 100), (80, 80, 160),
+                action="select"
+            )
             if select_action:
                 self.selected_ship = ship_type
 
