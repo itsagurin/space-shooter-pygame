@@ -2,7 +2,7 @@ import pygame
 import random
 import math
 from scripts.config import *
-from scripts.utils import load_enemy_image
+from scripts.utils import load_enemy_image, load_debris_image
 from scripts.projectiles import EnemyBullet
 
 

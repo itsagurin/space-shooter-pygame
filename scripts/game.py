@@ -198,10 +198,22 @@ class Game:
         draw_text(self.screen, f"Final Score: {self.score}", 32, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, WHITE)
 
         # Create buttons
-        restart_action = create_button("RESTART", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 80,
-                                       200, 40, (50, 120, 50), (0, 200, 0))
-        menu_action = create_button("MAIN MENU", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 140,
-                                    200, 40, (120, 50, 50), (200, 0, 0))
+        restart_action = create_button(
+            "RESTART",
+            SCREEN_WIDTH // 2 - 100,
+            SCREEN_HEIGHT // 2 + 80,
+            200, 40,
+            (50, 120, 50), (0, 200, 0),
+            action="restart"
+        )
+        menu_action = create_button(
+            "MAIN MENU",
+            SCREEN_WIDTH // 2 - 100,
+            SCREEN_HEIGHT // 2 + 140,
+            200, 40,
+            (120, 50, 50), (200, 0, 0),
+            action="menu"
+        )
 
         if restart_action:
             self.__init__(self.screen, self.ship_type)
