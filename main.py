@@ -1,7 +1,5 @@
 import random
 import pygame
-import os
-import sys
 from scripts.config import *
 from scripts.menu import Menu
 from scripts.game import Game
@@ -123,16 +121,12 @@ def main():
     ship_type = None
 
     while True:
-        # Show main menu until player chooses a ship
         menu = Menu(screen)
         ship_type = menu.show_start_menu()
-
-        # Start the game
         game = Game(screen, ship_type)
-        score, high_score = game.run()
-
-        # Can add a score screen or restart logic here if needed
-        # For now, it goes back to the menu
+        score, high_score, exit_to_menu = game.run()
+        if exit_to_menu:
+            continue
 
 
 if __name__ == "__main__":

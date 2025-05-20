@@ -30,15 +30,22 @@ def load_ship_image(ship_type):
 
 
 def load_enemy_image(enemy_type):
-    """Load an enemy ship image based on enemy type"""
+    """Load an enemy ship image based on enemy type and scale it down"""
     filepath = os.path.join(ENEMY_SHIPS_DIR, f"{enemy_type}.png")
-    return load_image(filepath)
-
+    img = pygame.image.load(filepath).convert_alpha()
+    scale = 0.33
+    new_size = (int(img.get_width() * scale), int(img.get_height() * scale))
+    img = pygame.transform.scale(img, new_size)
+    return img
 
 def load_debris_image(debris_type):
-    """Load a debris image based on debris type"""
+    """Load a debris image based on debris type and scale it down"""
     filepath = os.path.join(SPACE_DEBRIS_DIR, f"{debris_type}.png")
-    return load_image(filepath)
+    img = pygame.image.load(filepath).convert_alpha()
+    scale = 0.33
+    new_size = (int(img.get_width() * scale), int(img.get_height() * scale))
+    img = pygame.transform.scale(img, new_size)
+    return img
 
 
 def draw_text(surface, text, size, x, y, color=WHITE):

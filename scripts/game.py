@@ -7,7 +7,6 @@ from scripts.enemies import Enemy, Debris
 from scripts.powerups import PowerUp
 from scripts.utils import draw_text, draw_shield_bar, draw_lives, create_button
 
-
 class Game:
     def __init__(self, screen, ship_type='level1'):
         self.screen = screen
@@ -50,14 +49,22 @@ class Game:
         self.all_sprites.add(self.player)
         self.player_group.add(self.player)
 
+        # --- Dynamic spawn control ---
+        self.enemy_max_count = 2
+        self.debris_max_count = 1
+        self.enemy_increase_interval = 30000
+        self.debris_increase_interval = 60000
+        self.last_enemy_count_increase = pygame.time.get_ticks()
+        self.last_debris_count_increase = pygame.time.get_ticks()
+
         # Set timers for spawning entities
         self.last_enemy_spawn = pygame.time.get_ticks()
         self.last_debris_spawn = pygame.time.get_ticks()
         self.level_up_time = pygame.time.get_ticks()
 
         # Initial enemy and debris spawning
-        self.spawn_enemies(5)
-        self.spawn_debris(3)
+        self.spawn_enemies(self.enemy_max_count)
+        self.spawn_debris(self.debris_max_count)
 
         # Score and level progression
         self.high_score = 0
@@ -65,16 +72,24 @@ class Game:
 
     def run(self):
         """Main game loop"""
+        exit_to_menu = False
         while self.running:
             self.clock.tick(FPS)
             self.handle_events()
 
             if not self.paused and not self.game_over:
                 self.update()
-
             self.draw()
 
-        return self.score, self.high_score
+            if self.game_over:
+                result = self.draw_game_over_screen()
+                if result == "menu":
+                    exit_to_menu = True
+                    self.running = False
+                elif result == "restart":
+                    self.__init__(self.screen, self.ship_type)
+
+        return self.score, self.high_score, exit_to_menu
 
     def handle_events(self):
         """Handle user input"""
@@ -102,6 +117,21 @@ class Game:
         """Update game state"""
         now = pygame.time.get_ticks()
 
+        # Увеличение максимального количества врагов и debris каждую минуту
+        if now - self.last_enemy_count_increase > self.enemy_increase_interval:
+            self.enemy_max_count += 1
+            self.last_enemy_count_increase = now
+
+        if now - self.last_debris_count_increase > self.debris_increase_interval:
+            self.debris_max_count += 1
+            self.last_debris_count_increase = now
+
+        # Поддерживаем нужное количество врагов и debris на экране
+        if len(self.enemies) < self.enemy_max_count:
+            self.spawn_enemies(self.enemy_max_count - len(self.enemies))
+        if len(self.debris) < self.debris_max_count:
+            self.spawn_debris(self.debris_max_count - len(self.debris))
+
         # Check for level up
         if now - self.level_up_time > 30000:  # Level up every 30 seconds
             self.level_up()
@@ -120,15 +150,17 @@ class Game:
                     self.all_sprites.add(bullet)
                     self.enemy_bullets.add(bullet)
 
-        # Spawn new enemies
+        # Spawn new enemies (по таймеру, но не превышаем лимит)
         if now - self.last_enemy_spawn > ENEMY_SPAWN_RATE / self.spawn_rate_multiplier:
             self.last_enemy_spawn = now
-            self.spawn_enemies(1)
+            if len(self.enemies) < self.enemy_max_count:
+                self.spawn_enemies(1)
 
-        # Spawn new debris
+        # Spawn new debris (по таймеру, но не превышаем лимит)
         if now - self.last_debris_spawn > DEBRIS_SPAWN_RATE / self.spawn_rate_multiplier:
             self.last_debris_spawn = now
-            self.spawn_debris(1)
+            if len(self.debris) < self.debris_max_count:
+                self.spawn_debris(1)
 
         # Check for collisions
         self.check_collisions()
@@ -197,28 +229,18 @@ class Game:
         draw_text(self.screen, "GAME OVER", 64, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80, RED)
         draw_text(self.screen, f"Final Score: {self.score}", 32, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, WHITE)
 
-        # Create buttons
-        restart_action = create_button(
-            "RESTART",
-            SCREEN_WIDTH // 2 - 100,
-            SCREEN_HEIGHT // 2 + 80,
-            200, 40,
-            (50, 120, 50), (0, 200, 0),
-            action="restart"
-        )
-        menu_action = create_button(
-            "MAIN MENU",
-            SCREEN_WIDTH // 2 - 100,
-            SCREEN_HEIGHT // 2 + 140,
-            200, 40,
-            (120, 50, 50), (200, 0, 0),
-            action="menu"
-        )
+        restart_action = create_button("RESTART", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 80,
+                                       200, 40, (50, 120, 50), (0, 200, 0), action="restart")
+        menu_action = create_button("MAIN MENU", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 140,
+                                    200, 40, (120, 50, 50), (200, 0, 0), action="menu")
+
+        pygame.display.flip()
 
         if restart_action:
-            self.__init__(self.screen, self.ship_type)
+            return "restart"
         if menu_action:
-            self.running = False
+            return "menu"
+        return None
 
     def spawn_enemies(self, count):
         """Spawn new enemies"""
