@@ -1,11 +1,9 @@
 import random
 
 import pygame
-import os
 import sys
 from scripts.config import *
 from scripts.utils import draw_text, create_button, load_ship_image
-
 
 class Menu:
     def __init__(self, screen):
@@ -43,14 +41,24 @@ class Menu:
         """Display the main menu"""
         menu_running = True
 
+        menu_music_path = os.path.join(SOUNDS_DIR, "menu_background.mp3")
+        try:
+            pygame.mixer.music.load(menu_music_path)
+            pygame.mixer.music.set_volume(0.6)
+            pygame.mixer.music.play(-1)
+        except Exception as e:
+            print(f"Menu music load error: {e}")
+
         while menu_running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    pygame.mixer.music.stop()  # Остановить музыку при выходе
                     pygame.quit()
                     sys.exit()
 
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
+                        pygame.mixer.music.stop()
                         pygame.quit()
                         sys.exit()
 
@@ -80,9 +88,11 @@ class Menu:
             )
 
             if start_action:
+                pygame.mixer.music.stop()
                 return self.selected_ship
 
             if exit_action:
+                pygame.mixer.music.stop()
                 pygame.quit()
                 sys.exit()
 

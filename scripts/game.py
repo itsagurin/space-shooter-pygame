@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+import os
 from scripts.config import *
 from scripts.player import Player
 from scripts.enemies import Enemy, Debris
@@ -69,6 +70,17 @@ class Game:
         # Score and level progression
         self.high_score = 0
         self.try_load_high_score()
+
+        # --------- ДОБАВЛЕНО: Загрузка звука выстрела игрока ---------
+        self.shot_sound = None
+        shot_path = os.path.join(SOUNDS_DIR, "shot.wav")
+        if os.path.exists(shot_path):
+            try:
+                self.shot_sound = pygame.mixer.Sound(shot_path)
+                self.shot_sound.set_volume(0.5)  # Громкость по желанию
+            except Exception as e:
+                print(f"Could not load shot.wav: {e}")
+        # -------------------------------------------------------------
 
     def run(self):
         """Main game loop"""
@@ -274,6 +286,8 @@ class Game:
     def fire_player_weapon(self):
         """Fire player's weapon"""
         bullets = self.player.shoot()
+        if bullets and self.shot_sound:
+            self.shot_sound.play()
         for bullet in bullets:
             self.all_sprites.add(bullet)
             self.bullets.add(bullet)
