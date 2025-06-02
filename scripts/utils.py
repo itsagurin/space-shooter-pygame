@@ -79,24 +79,28 @@ def draw_lives(surface, x, y, lives, image):
         surface.blit(image, img_rect)
 
 
-def create_button(text, x, y, width, height, inactive_color, active_color, action=None, font_size=20):
-    """Create a button with hover effect"""
+def create_button(text, x, y, w, h, color, hover_color, action=None, events=None):
+    import pygame
+    screen = pygame.display.get_surface()
+    font = pygame.font.SysFont(None, 36)
     mouse = pygame.mouse.get_pos()
-    click = pygame.mouse.get_pressed()
+    click = False
 
-    surface = pygame.display.get_surface()
+    if events is None:
+        events = pygame.event.get()
 
-    if x < mouse[0] < x + width and y < mouse[1] < y + height:
-        pygame.draw.rect(surface, active_color, (x, y, width, height))
-        if click[0] == 1 and action is not None:
-            return action
+    for event in events:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            click = True
+
+    if x < mouse[0] < x + w and y < mouse[1] < y + h:
+        pygame.draw.rect(screen, hover_color, (x, y, w, h))
+        if click and action is not None:
+            return True
     else:
-        pygame.draw.rect(surface, inactive_color, (x, y, width, height))
+        pygame.draw.rect(screen, color, (x, y, w, h))
 
-    font = pygame.font.Font(pygame.font.match_font('arial'), font_size)
-    text_surf = font.render(text, True, WHITE)
-    text_rect = text_surf.get_rect()
-    text_rect.center = ((x + (width / 2)), (y + (height / 2)))
-    surface.blit(text_surf, text_rect)
-
-    return None
+    text_surf = font.render(text, True, (255, 255, 255))
+    text_rect = text_surf.get_rect(center=(x + w // 2, y + h // 2))
+    screen.blit(text_surf, text_rect)
+    return False
