@@ -20,21 +20,21 @@ class Enemy(pygame.sprite.Sprite):
 
         # Enemy attributes based on type
         if enemy_type == "enemy1":
-            self.health = 30
+            self.health = 20
             self.speed_min = ENEMY_SPEED_MIN
             self.speed_max = ENEMY_SPEED_MAX
             self.shoot_chance = ENEMY_SHOOT_CHANCE
             self.score_value = SCORE_ENEMY
             self.movement_pattern = "linear"
         elif enemy_type == "enemy2":
-            self.health = 50
+            self.health = 30
             self.speed_min = ENEMY_SPEED_MIN - 1
             self.speed_max = ENEMY_SPEED_MAX - 1
             self.shoot_chance = ENEMY_SHOOT_CHANCE * 1.5
             self.score_value = SCORE_ENEMY * 1.5
             self.movement_pattern = "sine"
         elif enemy_type == "enemy3":
-            self.health = 80
+            self.health = 50
             self.speed_min = ENEMY_SPEED_MIN - 2
             self.speed_max = ENEMY_SPEED_MAX - 2
             self.shoot_chance = ENEMY_SHOOT_CHANCE * 2

@@ -2,8 +2,8 @@ import os
 
 # Game settings
 TITLE = "Gradius Evolution"
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 900  # было 800
+SCREEN_HEIGHT = 700  # было 600
 FPS = 60
 
 # Define colors
@@ -16,7 +16,7 @@ YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
 DARK_BLUE = (20, 30, 70)
 PURPLE = (128, 0, 128)
-GRAY = (128, 128, 128)  # Added for locked ships
+GRAY = (128, 128, 128)
 
 # Game difficulty settings
 ENEMY_SPAWN_RATE = 3000  # milliseconds
@@ -29,9 +29,9 @@ PLAYER_LIVES = 3
 PLAYER_SHOOT_DELAY = 250  # milliseconds
 
 # Enemy settings
-ENEMY_SPEED_MIN = 3
-ENEMY_SPEED_MAX = 6
-ENEMY_SHOOT_CHANCE = 0.01  # 1% chance per frame
+ENEMY_SPEED_MIN = 2
+ENEMY_SPEED_MAX = 4
+ENEMY_SHOOT_CHANCE = 0.008
 
 # Ship unlock system
 SHIP_UNLOCK_SCORES = {
