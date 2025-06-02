@@ -28,7 +28,6 @@ class Game:
         except:
             self.background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             self.background.fill(DARK_BLUE)
-
             # Create stars
             for _ in range(200):
                 x = random.randrange(0, SCREEN_WIDTH)
@@ -123,12 +122,8 @@ class Game:
                 if event.key == pygame.K_SPACE and not self.paused and not self.game_over:
                     self.fire_player_weapon()
 
-                # Обработка клавиш в game over состоянии
-                if self.game_over:
-                    if event.key == pygame.K_r:
-                        return "restart"
-                    if event.key == pygame.K_m:
-                        return "menu"
+                # Удалено: обработка клавиш R и M на экране game over
+                # Теперь только кнопки на экране работают!
 
         return None
 
@@ -248,16 +243,16 @@ class Game:
         draw_text(self.screen, "GAME OVER", 64, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80, RED)
         draw_text(self.screen, f"Final Score: {self.score}", 32, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, WHITE)
 
-        draw_text(self.screen, "Press R to restart or M for main menu", 20, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40,
-                  WHITE)
+        # Изменила текст под кнопками, убрала про R/M:
+        draw_text(self.screen, "Use the buttons below to restart or return to menu", 20, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40, WHITE)
 
-        # Проверяем кнопки без обработки событий внутри
+        # Проверяем кнопки
         restart_action = create_button("RESTART", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 80,
                                        200, 40, (50, 120, 50), (0, 200, 0), action="restart")
         menu_action = create_button("MAIN MENU", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 140,
-                                    200, 40, (120, 50, 50), (200, 0, 0), action="menu")
+                                     200, 40, (120, 50, 50), (200, 0, 0), action="menu")
 
-        # Возвращаем действие, но не обрабатываем события здесь
+        # Возвращаем действие
         if restart_action:
             return "restart"
         if menu_action:
