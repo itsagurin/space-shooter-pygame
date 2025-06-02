@@ -10,6 +10,9 @@ pygame.mixer.init()  # Initialize sound mixer
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption(TITLE)
 
+# Global variable to track the highest score achieved in this session
+max_score_achieved = 0
+
 
 # Create required directories if they don't exist
 def create_required_dirs():
@@ -112,19 +115,35 @@ def create_image(path, color, size):
 
 
 def main():
-    """Main function to run the game"""
+    """Main function to run the game with ship unlock system"""
+    global max_score_achieved
+
     # Setup initial resources
     create_required_dirs()
     create_placeholder_images()
 
-    # Start with the menu
-    ship_type = None
-
+    # Game loop with ship unlock tracking
     while True:
-        menu = Menu(screen)
+        # Create menu with current max score
+        menu = Menu(screen, max_score_achieved)
         ship_type = menu.show_start_menu()
+
+        # Run the game
         game = Game(screen, ship_type)
-        score, high_score, exit_to_menu = game.run()
+        final_score, high_score, exit_to_menu = game.run()
+
+        # Update max score achieved if this game was better
+        if final_score > max_score_achieved:
+            max_score_achieved = final_score
+            print(f"New best score achieved: {max_score_achieved}")  # Debug output
+
+            # Check for ship unlocks
+            if max_score_achieved >= SHIP_UNLOCK_SCORES['level2'] and max_score_achieved < SHIP_UNLOCK_SCORES['level3']:
+                print("Ship Level 2 unlocked!")
+            elif max_score_achieved >= SHIP_UNLOCK_SCORES['level3']:
+                print("Ship Level 3 unlocked!")
+
+        # Continue to menu if player chose to return
         if exit_to_menu:
             continue
 

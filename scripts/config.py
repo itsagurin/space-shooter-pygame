@@ -16,6 +16,7 @@ YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
 DARK_BLUE = (20, 30, 70)
 PURPLE = (128, 0, 128)
+GRAY = (128, 128, 128)  # Added for locked ships
 
 # Game difficulty settings
 ENEMY_SPAWN_RATE = 3000  # milliseconds
@@ -31,6 +32,13 @@ PLAYER_SHOOT_DELAY = 250  # milliseconds
 ENEMY_SPEED_MIN = 3
 ENEMY_SPEED_MAX = 6
 ENEMY_SHOOT_CHANCE = 0.01  # 1% chance per frame
+
+# Ship unlock system
+SHIP_UNLOCK_SCORES = {
+    'level1': 0,      # Always unlocked
+    'level2': 500,    # Unlocked at 500 points
+    'level3': 1000    # Unlocked at 1000 points
+}
 
 # Ship characteristics
 SHIP_STATS = {

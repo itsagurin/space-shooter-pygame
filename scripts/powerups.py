@@ -1,5 +1,6 @@
 import pygame
 import random
+import math  # Добавлен импорт math
 from scripts.config import *
 
 
@@ -49,7 +50,7 @@ class PowerUp(pygame.sprite.Sprite):
         if self.oscillate:
             self.oscillate_counter += self.oscillate_speed
             self.rect.y = self.original_y + int(self.oscillate_amplitude *
-                                                pygame.math.sin(self.oscillate_counter))
+                                                math.sin(self.oscillate_counter))
 
         # Remove power-up if it goes off screen
         if self.rect.right < 0:

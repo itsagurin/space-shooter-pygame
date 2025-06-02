@@ -8,6 +8,7 @@ from scripts.enemies import Enemy, Debris
 from scripts.powerups import PowerUp
 from scripts.utils import draw_text, draw_shield_bar, draw_lives, create_button
 
+
 class Game:
     def __init__(self, screen, ship_type='level1'):
         self.screen = screen
@@ -87,19 +88,22 @@ class Game:
         exit_to_menu = False
         while self.running:
             self.clock.tick(FPS)
-            self.handle_events()
+
+            # Обработка событий всегда, включая game over
+            game_over_result = self.handle_events()
+
+            # Если получили результат из game over экрана
+            if game_over_result == "menu":
+                exit_to_menu = True
+                self.running = False
+            elif game_over_result == "restart":
+                self.__init__(self.screen, self.ship_type)
+                continue
 
             if not self.paused and not self.game_over:
                 self.update()
-            self.draw()
 
-            if self.game_over:
-                result = self.draw_game_over_screen()
-                if result == "menu":
-                    exit_to_menu = True
-                    self.running = False
-                elif result == "restart":
-                    self.__init__(self.screen, self.ship_type)
+            self.draw()
 
         return self.score, self.high_score, exit_to_menu
 
@@ -113,17 +117,20 @@ class Game:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
-                if event.key == pygame.K_p:
+                    return "menu"
+                if event.key == pygame.K_p and not self.game_over:
                     self.paused = not self.paused
-                if event.key == pygame.K_SPACE and not self.paused:
+                if event.key == pygame.K_SPACE and not self.paused and not self.game_over:
                     self.fire_player_weapon()
 
-            if self.game_over:
-                if event.type == pygame.KEYDOWN:
+                # Обработка клавиш в game over состоянии
+                if self.game_over:
                     if event.key == pygame.K_r:
-                        self.__init__(self.screen, self.ship_type)
+                        return "restart"
                     if event.key == pygame.K_m:
-                        self.running = False
+                        return "menu"
+
+        return None
 
     def update(self):
         """Update game state"""
@@ -241,13 +248,16 @@ class Game:
         draw_text(self.screen, "GAME OVER", 64, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80, RED)
         draw_text(self.screen, f"Final Score: {self.score}", 32, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, WHITE)
 
+        draw_text(self.screen, "Press R to restart or M for main menu", 20, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40,
+                  WHITE)
+
+        # Проверяем кнопки без обработки событий внутри
         restart_action = create_button("RESTART", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 80,
                                        200, 40, (50, 120, 50), (0, 200, 0), action="restart")
         menu_action = create_button("MAIN MENU", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 140,
                                     200, 40, (120, 50, 50), (200, 0, 0), action="menu")
 
-        pygame.display.flip()
-
+        # Возвращаем действие, но не обрабатываем события здесь
         if restart_action:
             return "restart"
         if menu_action:

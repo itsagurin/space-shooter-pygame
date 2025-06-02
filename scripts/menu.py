@@ -5,10 +5,13 @@ import sys
 from scripts.config import *
 from scripts.utils import draw_text, create_button, load_ship_image
 
+
 class Menu:
-    def __init__(self, screen):
+    def __init__(self, screen, max_score_achieved=0):
         self.screen = screen
         self.selected_ship = 'level1'
+        self.max_score_achieved = max_score_achieved  # Track highest score achieved
+
         self.ship_images = {
             'level1': load_ship_image('level1'),
             'level2': load_ship_image('level2'),
@@ -37,9 +40,26 @@ class Menu:
             'level3': "DESTROYER - Heavy armor with triple laser spread"
         }
 
+    def is_ship_unlocked(self, ship_type):
+        """Check if a ship is unlocked based on score achievement"""
+        required_score = SHIP_UNLOCK_SCORES.get(ship_type, 0)
+        return self.max_score_achieved >= required_score
+
+    def get_next_available_ship(self):
+        """Get the first available unlocked ship"""
+        ships = ['level1', 'level2', 'level3']
+        for ship in ships:
+            if self.is_ship_unlocked(ship):
+                return ship
+        return 'level1'  # Fallback
+
     def show_start_menu(self):
         """Display the main menu"""
         menu_running = True
+
+        # Ensure selected ship is unlocked
+        if not self.is_ship_unlocked(self.selected_ship):
+            self.selected_ship = self.get_next_available_ship()
 
         menu_music_path = os.path.join(SOUNDS_DIR, "menu_background.mp3")
         try:
@@ -52,7 +72,7 @@ class Menu:
         while menu_running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.mixer.music.stop()  # Остановить музыку при выходе
+                    pygame.mixer.music.stop()  # Stop music on exit
                     pygame.quit()
                     sys.exit()
 
@@ -68,6 +88,10 @@ class Menu:
             # Draw title
             draw_text(self.screen, "GRADIUS EVOLUTION", 50, SCREEN_WIDTH // 2, 50, YELLOW)
             draw_text(self.screen, "Select your ship and start the mission", 25, SCREEN_WIDTH // 2, 120)
+
+            # Display current max score
+            if self.max_score_achieved > 0:
+                draw_text(self.screen, f"Best Score: {self.max_score_achieved}", 20, SCREEN_WIDTH // 2, 90, WHITE)
 
             # Create buttons
             start_action = create_button(
@@ -102,46 +126,68 @@ class Menu:
             pygame.display.flip()
 
     def draw_ship_selection(self):
-        """Draw ship selection interface"""
+        """Draw ship selection interface with unlock status"""
         ships = ['level1', 'level2', 'level3']
         center_y = SCREEN_HEIGHT // 2
 
         # Display each ship with selection indicators
         for i, ship_type in enumerate(ships):
             x_pos = 200 + i * 200
+            is_unlocked = self.is_ship_unlocked(ship_type)
 
-            # Draw selection box if this ship is selected
-            if ship_type == self.selected_ship:
+            # Draw selection box if this ship is selected and unlocked
+            if ship_type == self.selected_ship and is_unlocked:
                 pygame.draw.rect(self.screen, YELLOW,
                                  (x_pos - 60, center_y - 60, 120, 120), 3)
+            elif not is_unlocked:
+                # Draw lock indicator for locked ships
+                pygame.draw.rect(self.screen, RED,
+                                 (x_pos - 60, center_y - 60, 120, 120), 2)
 
-            # Draw ship image
-            ship_img = self.ship_images.get(ship_type)
+            # Draw ship image (grayed out if locked)
+            ship_img = self.ship_images.get(ship_type).copy()
+
+            if not is_unlocked:
+                # Create a grayed out version
+                gray_surf = pygame.Surface(ship_img.get_size())
+                gray_surf.fill(GRAY)
+                ship_img.blit(gray_surf, (0, 0), special_flags=pygame.BLEND_MULT)
+
             ship_rect = ship_img.get_rect(center=(x_pos, center_y))
             self.screen.blit(ship_img, ship_rect)
 
-            # Draw ship name and stats
-            draw_text(self.screen, f"Ship {i + 1}", 20, x_pos, center_y + 70)
+            # Draw ship name and unlock status
+            if is_unlocked:
+                draw_text(self.screen, f"Ship {i + 1}", 20, x_pos, center_y + 70)
+                # Create selection button only for unlocked ships
+                select_action = create_button(
+                    "SELECT",
+                    x_pos - 50,
+                    center_y + 100,
+                    100, 30,
+                    (50, 50, 100), (80, 80, 160),
+                    action="select"
+                )
+                if select_action:
+                    self.selected_ship = ship_type
+            else:
+                # Show locked status and required score
+                draw_text(self.screen, "LOCKED", 16, x_pos, center_y + 70, RED)
+                required_score = SHIP_UNLOCK_SCORES.get(ship_type, 0)
+                draw_text(self.screen, f"Need {required_score} pts", 14, x_pos, center_y + 90, RED)
 
-            # Create selection button
-            select_action = create_button(
-                "SELECT",
-                x_pos - 50,
-                center_y + 100,
-                100, 30,
-                (50, 50, 100), (80, 80, 160),
-                action="select"
-            )
-            if select_action:
-                self.selected_ship = ship_type
+        # Draw ship description (only for unlocked ships)
+        if self.is_ship_unlocked(self.selected_ship):
+            description = self.ship_descriptions.get(self.selected_ship, "")
+            draw_text(self.screen, description, 18, SCREEN_WIDTH // 2, center_y + 160, WHITE)
 
-        # Draw ship description
-        description = self.ship_descriptions.get(self.selected_ship, "")
-        draw_text(self.screen, description, 18, SCREEN_WIDTH // 2, center_y + 160, WHITE)
-
-        # Draw ship stats
-        stats = SHIP_STATS.get(self.selected_ship, {})
-        stat_y = center_y + 190
-        draw_text(self.screen, f"Speed: {stats.get('speed', 0)}", 16, SCREEN_WIDTH // 2 - 100, stat_y)
-        draw_text(self.screen, f"Fire Rate: {stats.get('fire_rate', 0)}", 16, SCREEN_WIDTH // 2, stat_y)
-        draw_text(self.screen, f"Power: {stats.get('power', 0)}", 16, SCREEN_WIDTH // 2 + 100, stat_y)
+            # Draw ship stats
+            stats = SHIP_STATS.get(self.selected_ship, {})
+            stat_y = center_y + 190
+            draw_text(self.screen, f"Speed: {stats.get('speed', 0)}", 16, SCREEN_WIDTH // 2 - 100, stat_y)
+            draw_text(self.screen, f"Fire Rate: {stats.get('fire_rate', 0)}", 16, SCREEN_WIDTH // 2, stat_y)
+            draw_text(self.screen, f"Power: {stats.get('power', 0)}", 16, SCREEN_WIDTH // 2 + 100, stat_y)
+        else:
+            # Show unlock instructions
+            draw_text(self.screen, "Achieve higher scores to unlock more ships!", 18, SCREEN_WIDTH // 2, center_y + 160,
+                      YELLOW)
