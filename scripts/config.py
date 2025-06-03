@@ -2,8 +2,8 @@ import os
 
 # Game settings
 TITLE = "Gradius Evolution"
-SCREEN_WIDTH = 900  # было 800
-SCREEN_HEIGHT = 700  # было 600
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 FPS = 60
 
 # Define colors

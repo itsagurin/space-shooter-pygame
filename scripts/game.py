@@ -1,13 +1,11 @@
 import pygame
 import random
 import sys
-import os
 from scripts.config import *
 from scripts.player import Player
 from scripts.enemies import Enemy, Debris
 from scripts.powerups import PowerUp
 from scripts.utils import draw_text, draw_shield_bar, draw_lives, create_button
-
 
 class Game:
     def __init__(self, screen, ship_type='level1'):
@@ -21,7 +19,7 @@ class Game:
         self.level = 1
         self.spawn_rate_multiplier = 1.0
 
-        # Load game background
+        # Load initial background (first background)
         try:
             self.background = pygame.image.load(os.path.join(BACKGROUNDS_DIR, 'nebula_bg.png')).convert()
             self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -34,6 +32,19 @@ class Game:
                 size = random.randrange(1, 3)
                 color = random.choice([WHITE, (200, 200, 255), (255, 200, 200)])
                 pygame.draw.circle(self.background, color, (x, y), size)
+
+        # Load secondary background (for smooth transition)
+        try:
+            self.alt_background = pygame.image.load(os.path.join(BACKGROUNDS_DIR, 'space_bg.png')).convert()
+            self.alt_background = pygame.transform.scale(self.alt_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        except:
+            self.alt_background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.alt_background.fill((30, 20, 80))  # fallback color
+
+        self.using_alt_background = False
+        self.transitioning = False
+        self.transition_alpha = 0
+        self.TRANSITION_SPEED = 10  # Higher value = faster transition
 
         self.all_sprites = pygame.sprite.Group()
         self.player_group = pygame.sprite.Group()
@@ -73,12 +84,42 @@ class Game:
             except Exception as e:
                 print(f"Could not load shot.wav: {e}")
 
+        # Background music for the game
+        self.bg_music_path = os.path.join(SOUNDS_DIR, "gaming.mp3")
+        self.music_started = False
+
+        # Explosion sound for enemy kills
+        self.explosion_sound = None
+        explosion_path = os.path.join(SOUNDS_DIR, "fail.wav")
+        if os.path.exists(explosion_path):
+            try:
+                self.explosion_sound = pygame.mixer.Sound(explosion_path)
+                self.explosion_sound.set_volume(0.4)
+            except Exception as e:
+                print(f"Could not load fail.wav: {e}")
+
+    def start_game_music(self):
+        if not self.music_started:
+            try:
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load(self.bg_music_path)
+                pygame.mixer.music.set_volume(0.28)
+                pygame.mixer.music.play(-1)
+                self.music_started = True
+            except Exception as e:
+                print(f"Game music load error: {e}")
+
+    def stop_game_music(self):
+        pygame.mixer.music.stop()
+        self.music_started = False
+
     def run(self):
         exit_to_menu = False
+        self.start_game_music()
+
         while self.running:
             self.clock.tick(FPS)
-            events = pygame.event.get()  # <--- собираем все события
-
+            events = pygame.event.get()
             game_over_result = self.handle_events(events)
 
             if game_over_result == "menu":
@@ -86,6 +127,7 @@ class Game:
                 self.running = False
             elif game_over_result == "restart":
                 self.__init__(self.screen, self.ship_type)
+                self.start_game_music()
                 continue
 
             if not self.paused and not self.game_over:
@@ -93,11 +135,13 @@ class Game:
 
             self.draw(events)
 
+        self.stop_game_music()
         return self.score, self.high_score, exit_to_menu
 
     def handle_events(self, events):
         for event in events:
             if event.type == pygame.QUIT:
+                self.stop_game_music()
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
@@ -131,6 +175,21 @@ class Game:
 
         self.all_sprites.update()
 
+        # Background transition trigger
+        if self.score >= 1500 and not self.using_alt_background and not self.transitioning:
+            self.transitioning = True
+            self.transition_alpha = 0
+
+        # Animate the transition if active
+        if self.transitioning:
+            self.transition_alpha += self.TRANSITION_SPEED
+            if self.transition_alpha >= 255:
+                self.transition_alpha = 255
+                self.transitioning = False
+                self.using_alt_background = True
+                # Switch main background reference for future frames
+                self.background = self.alt_background
+
         for enemy in self.enemies:
             enemy.update(self.player.rect.centerx, self.player.rect.centery)
             if random.random() < enemy.shoot_chance:
@@ -158,7 +217,16 @@ class Game:
                 self.save_high_score()
 
     def draw(self, events):
-        self.screen.blit(self.background, (0, 0))
+        # Draw current background, and if transitioning, blend into alt background
+        if self.transitioning and not self.using_alt_background:
+            bg_copy = self.background.copy()
+            alt_bg = self.alt_background.copy()
+            alt_bg.set_alpha(self.transition_alpha)
+            self.screen.blit(bg_copy, (0, 0))
+            self.screen.blit(alt_bg, (0, 0))
+        else:
+            self.screen.blit(self.background, (0, 0))
+
         self.all_sprites.draw(self.screen)
         self.draw_hud()
         if self.paused:
@@ -167,6 +235,7 @@ class Game:
             result = self.draw_game_over_screen(events)
             if result == "restart":
                 self.__init__(self.screen, self.ship_type)
+                self.start_game_music()
             elif result == "menu":
                 self.running = False
         pygame.display.flip()
@@ -195,7 +264,6 @@ class Game:
         draw_text(self.screen, f"Final Score: {self.score}", 32, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, WHITE)
         draw_text(self.screen, "Use the buttons below to restart or return to menu", 20, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40, WHITE)
 
-        # Передаём события в create_button!
         restart_action = create_button("RESTART", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 80,
                                        200, 40, (50, 120, 50), (0, 200, 0), action="restart", events=events)
         menu_action = create_button("MAIN MENU", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 140,
@@ -245,6 +313,8 @@ class Game:
                 if enemy.take_damage(10):
                     self.score += int(enemy.score_value)
                     enemy.kill()
+                    if self.explosion_sound:
+                        self.explosion_sound.play()
                     if random.random() < POWERUP_CHANCE:
                         powerup = PowerUp(enemy.rect.center)
                         self.all_sprites.add(powerup)
